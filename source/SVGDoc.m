@@ -1,9 +1,13 @@
 classdef SVGDoc < handle
+    % SVGDoc A tool for creating a SVG image procedurally.
+    %   This is a class that allows the user to draw an SVG image by adding
+    %       geometric primitives. It also allows for adding styling 
+    %       directly, or by reference to style classes.
     properties
-        Width = 24000
-        Height = 12000
-        Classes
-        Objects
+        Width = 24000      % Width of document page
+        Height = 12000     % Height of document page
+        Classes            % List of style classes defined in document
+        Objects            % List of geometrical objects added to document
     end
     methods
         function obj = SVGDoc(width, height)
@@ -252,6 +256,8 @@ classdef SVGDoc < handle
             objectIdx = find(strcmp(className, usedClasses));
         end
         function svg = createSVG(obj)
+            % Translate geometry and styling into SVG text markup. This
+            %   creates and returns the text, but does not save it to file.
             allClassText = '';
             for classNum = 1:length(obj.Classes)
                 classText = SVGDoc.createClassText(obj.Classes(classNum));
@@ -339,8 +345,9 @@ classdef SVGDoc < handle
         end
         function style = resolveStyle(obj, object)
             % Resolve the effective style elements for the object,
-            % considering the "inline" style attributes, and those derived
-            % from its classes.
+            %   considering the "inline" style attributes, and those 
+            %   derived from its classes.
+            %   object = a geometrical object struct
             style = [];
             for j = 1:length(object.classNames)
                 % Add in elements from class styles, overriding as we
@@ -362,6 +369,9 @@ classdef SVGDoc < handle
             
         end
         function [classExists, classIdx] = validateClass(obj, className)
+            % Check if a class by the given name exists in this document,
+            %   and if it does exist, what its index in the class list is.
+            %   className = a char array representing a className to query
             if isempty(obj.Classes)
                 classExists = false;
                 classIdx = [];
@@ -372,6 +382,9 @@ classdef SVGDoc < handle
             classExists = ~isempty(classIdx);
         end
         function classNames = handleClassNamesInput(obj, classNames)
+            % Do some className input parsing and sanity checking
+            % classNames = one or more classNames as either a char array or
+            %   a cell array.
             if ischar(classNames)
                 % Single class name passed - wrap in cell array
                 classNames = {classNames};
@@ -386,7 +399,9 @@ classdef SVGDoc < handle
     methods (Static)
         function style = updateStyle(style, newStyle)
             % Merges new style into old style, adding or overwriting
-            % properties as necessary
+            %   properties as necessary
+            %   style = the style object to merge into
+            %   newStyle = the style object (or style char array) to merge
             if ischar(newStyle)
                 % Parse style if it is a char array
                 newStyle = SVGDoc.parseStyle(newStyle);
@@ -404,9 +419,12 @@ classdef SVGDoc < handle
                 style(addIdx).value = newStyle(k).value;
             end
         end
-        function style = parseStyle(style)
+        function style = parseStyle(styleString)
             % Convert a string style specification into a key/value struct
-            statements = split(style, ';');
+            %   styleString = a char array formatted as an SVG/CSS style
+            %       string
+            %   style = a style object
+            statements = split(styleString, ';');
             style = [];
             for k = 1:length(statements)
                 if isempty(statements{k})
@@ -432,6 +450,9 @@ classdef SVGDoc < handle
         function newClass = constructClass(className, varargin)
             % Create a new class object, which is just a list of key/value
             % pairs specifying an object style.
+            %   className = the char array name of the class to create
+            %   name/value = name value pairs represent key/value pairs for
+            %       the style definition
             if mod(length(varargin), 2) ~= 0
                 error('Classes must be created with key/value pairs. Unpaired key found.');
             end
@@ -450,6 +471,8 @@ classdef SVGDoc < handle
             end
         end
         function classText = createClassText(classElement)
+            % Create a CSS/SVG string from the class struct
+            % classElement = the struct as stored in the Classes array
             keyValueFormat = '%s:%s;';
             classFormat = '.%s {%s}\n';
             styleTexts = arrayfun(@(element)sprintf(keyValueFormat, element.key, element.value), classElement.style, 'UniformOutput', false);
@@ -457,6 +480,9 @@ classdef SVGDoc < handle
             classText = sprintf(classFormat, classElement.name, styleText);
         end
         function elementText = createElementText(element)
+            % Create a SVG tag string from the struct element
+            % element = the struct representing a geometrical element as
+            %   stored in the Objects array
             data = element.data;
             classNames = strjoin(element.classNames, ' ');
             switch element.type

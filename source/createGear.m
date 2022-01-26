@@ -1,40 +1,53 @@
-function coords = createGear(numTeeth, toothDepth, strokeLength, toothTopFraction, circular)
+function [xs, ys] = createGear(numTeeth, toothDepth, strokeLength, toothTopFraction, circular)
 toothPeriod = strokeLength/numTeeth;
 slopeWidth = (1-toothTopFraction)*toothPeriod/2;
-x = -toothDepth/2;
-y = 0;
+
+initialX = -toothDepth/2;
+initialY = 0;
+x = initialX;
+y = initialY;
+
 pointNum = 1;
-coords = [];
+xs = [];
+ys = [];
 for toothNum = 1:numTeeth
-    coords(:, pointNum) = [x; y];
+    xs(pointNum) = x; ys(pointNum) = y;
     pointNum = pointNum + 1;
     % First slope
     x = x + toothDepth;
     y = y + slopeWidth;
-    coords(:, pointNum) = [x; y];
+    xs(pointNum) = x; ys(pointNum) = y;
     pointNum = pointNum + 1;
     % Tooth top
     x = x + 0;
     y = y + toothTopFraction*toothPeriod/2;
-    coords(:, pointNum) = [x; y];
+    xs(pointNum) = x; ys(pointNum) = y;
     pointNum = pointNum + 1;
     % Second slope
     x = x - toothDepth;
     y = y + slopeWidth;
-    coords(:, pointNum) = [x; y];
+    xs(pointNum) = x; ys(pointNum) = y;
     pointNum = pointNum + 1;
     % Tooth bottom
     x = x + 0;
     y = y + toothTopFraction*toothPeriod/2;
-    coords(:, pointNum) = [x; y];
+    xs(pointNum) = x; ys(pointNum) = y;
     pointNum = pointNum + 1;
 end
-coords(:, pointNum) = [x; y];
+xs(pointNum) = x; ys(pointNum) = y;
 
 if circular
-    transformedCoords = [];
+    % "Wrap" gear around a circle
     radius = strokeLength / (2*pi);
-    transformedCoords(1, :) = (radius+coords(1, :)).*cos(2*pi*coords(2, :)/strokeLength);
-    transformedCoords(2, :) = (radius+coords(1, :)).*sin(2*pi*coords(2, :)/strokeLength);
-    coords = transformedCoords;
+    transformedX = (radius + xs) .* cos(2*pi*ys/strokeLength);
+    transformedY = (radius + xs) .* sin(2*pi*ys/strokeLength);
+    xs = transformedX;
+    ys = transformedY;
+else
+    % Add body to the gear
+    depth = strokeLength/(2*pi);
+    xs(end+1) = -depth;
+    ys(end+1) = ys(end);
+    xs(end+1) = -depth;
+    ys(end+1) = 0;
 end

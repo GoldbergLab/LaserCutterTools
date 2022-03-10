@@ -19,9 +19,9 @@ function [xs, ys] = createGear(numTeeth, toothDepth, strokeLength, toothTopFract
 %    ys is a list of y coordinates defining the gear profile.
 %
 % This is a function that creates a simple procedural gear, either circular
-%   or linear (known as a rack). At the moment, it creates flat contact
-%   surfaces, which is not ideal - the ideal shape would be an involute
-%   of a circle. Future versions may have that option.
+%   or linear (known as a rack). At the moment, it creates contact 
+%   surfaces which are not quite the right shape - the ideal shape would be
+%   an involute of a circle. Future versions may have that option.
 %
 % The output of this function could be used, for example, to produce an
 %   SVG file for laser cutting using the SVGDoc tool:
@@ -50,24 +50,29 @@ y = initialY;
 pointNum = 1;
 xs = [];
 ys = [];
+nSlopePoints = 1;
 for toothNum = 1:numTeeth
     xs(pointNum) = x; ys(pointNum) = y;
     pointNum = pointNum + 1;
     % First slope
-    x = x + toothDepth;
-    y = y + slopeWidth;
-    xs(pointNum) = x; ys(pointNum) = y;
-    pointNum = pointNum + 1;
+    for k = 1:nSlopePoints
+        x = x + toothDepth/nSlopePoints;
+        y = y + slopeWidth/nSlopePoints;
+        xs(pointNum) = x; ys(pointNum) = y;
+        pointNum = pointNum + 1;
+    end
     % Tooth top
     x = x + 0;
     y = y + toothTopFraction*toothPeriod/2;
     xs(pointNum) = x; ys(pointNum) = y;
     pointNum = pointNum + 1;
     % Second slope
-    x = x - toothDepth;
-    y = y + slopeWidth;
-    xs(pointNum) = x; ys(pointNum) = y;
-    pointNum = pointNum + 1;
+    for k = 1:nSlopePoints
+        x = x - toothDepth/nSlopePoints;
+        y = y + slopeWidth/nSlopePoints;
+        xs(pointNum) = x; ys(pointNum) = y;
+        pointNum = pointNum + 1;
+    end
     % Tooth bottom
     x = x + 0;
     y = y + toothTopFraction*toothPeriod/2;

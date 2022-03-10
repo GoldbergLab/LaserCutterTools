@@ -361,7 +361,9 @@ classdef SVGDoc < handle
             style = SVGDoc.updateStyle(style, object.style);
         end
         function saveSVG(obj, filepath)
-            % Create svg file
+            % SVGDoc.saveSVG(filepath)
+            %   Create svg file
+            %       filepath = path to save SVG file to
             svg = obj.createSVG();
             fileID = fopen(filepath, 'w');
             fprintf(fileID, svg);

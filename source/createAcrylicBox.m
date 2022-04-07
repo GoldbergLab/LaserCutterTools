@@ -1,4 +1,4 @@
-function svgText = createAcrylicBox(boxSize, svgSavePath, inchesPerTab, materialThickness, materialDims, door)
+function svgText = createAcrylicBox(boxSize, svgSavePath, inchesPerTab, materialThickness, materialDims, door, tabFraction, tabTolerance)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % createAcrylicBox: Generate an SVG image of the pieces of a box with the
@@ -45,10 +45,6 @@ function svgText = createAcrylicBox(boxSize, svgSavePath, inchesPerTab, material
 % Real_email = regexprep(Email,{'=','*'},{'@','.'})
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if ~exist('door', 'var') || isempty(door)
-    door = true;
-end
-
 % Determine # of tabs to include
 if ~exist('inchesPerTab', 'var') || isempty(inchesPerTab)
     inchesPerTab = 0.5;
@@ -65,8 +61,19 @@ end
 if ~exist('materialDims', 'var') || isempty(materialDims)
     materialDims = [24000, 12000];
 end
-disp('door:')
-disp(door)
+
+if ~exist('door', 'var') || isempty(door)
+    door = true;
+end
+
+if ~exist('tabFraction', 'var') || isempty(tabFraction)
+    tabFraction = 0.5;
+end
+if ~exist('tabTolerance', 'var') || isempty(tabTolerance)
+    tabTolerance = 0;
+end
+
+
 % Shape determinations (F=flat-out, f=flat-in, O=outie, I=innie):
 if door
     % Face shapes with un-tabbed side for door
@@ -107,146 +114,125 @@ unitEdgeOffsets = [
     [0, -1];
     ];
 
+% Create all six sets of face coordiantes
 faceCoordinates = {};
 for faceNum = 1:6
-    faceCoordinates{faceNum} = createFaceCoordinates(faceShapes{faceNum}, faceDirections(faceNum, :), boxSize, numTabs, materialThickness);
+    faceCoordinates{faceNum} = createFaceCoordinates(faceShapes{faceNum}, faceDirections(faceNum, :), boxSize, numTabs, materialThickness, tabFraction, tabTolerance);
 end
 
-svgStart = [
-['<?xml version="1.0" encoding="UTF-8"?>', newline], ...
-['<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">', newline], ...
-['<!-- Creator: CorelDRAW 2017 -->', newline], ...
-['<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="24in" height="12in" version="1.1" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"', newline], ...
-['viewBox="0 0 ',num2str(materialDims(1)),' ',num2str(materialDims(2)),'"', newline], ...
-[' xmlns:xlink="http://www.w3.org/1999/xlink">', newline], ...
-[' <defs>', newline], ...
-['  <style type="text/css">', newline], ...
-['   <![CDATA[', newline], ...
-['    .str0 {stroke:red;stroke-width:3;stroke-miterlimit:2.61313}', newline], ...
-['    .fil0 {fill:none}', newline], ...
-['   ]]>', newline], ...
-['  </style>', newline], ...
-[' </defs>', newline], ...
-[' <g>', newline], ...
-['  <metadata id="CorelCorpID_0Corel-Layer"/>', newline], ...
-];
-svgGroupStart = ['  <g>', newline];
-svgLineFormat = ['    <line class="fil0 str0" x1="%.3f" y1="%.3f" x2="%.3f" y2="%.3f" />', newline];
-svgGroupEnd = ['  </g>', newline];
-svgEnd = [[' </g>', newline], ['</svg>']];
+% Initialize an SVGDoc object
+s = SVGDoc(materialDims(1), materialDims(2));
 
-svgText = svgStart;
+% Spacing between faces in SVG
 intraFaceDistance = 250;
-offset = [0; 0];
-figure;
+
+% Draw each face to the SVG doc
+offset = [0, 0];
 for f = 1:length(faceCoordinates)
     singleFaceCoordinates = faceCoordinates{f};
-    minX = min(singleFaceCoordinates(1, :));
-    minY = min(singleFaceCoordinates(2, :));
-    singleFaceCoordinates = singleFaceCoordinates - [minX; minY];
-    maxX = max(singleFaceCoordinates(1, :));
+    minX = min(singleFaceCoordinates(:, 1));
+    minY = min(singleFaceCoordinates(:, 2));
+    singleFaceCoordinates = singleFaceCoordinates - [minX, minY];
+    maxX = max(singleFaceCoordinates(:, 1));
     singleFaceCoordinates = singleFaceCoordinates + offset;
-    plot(singleFaceCoordinates(1, :), singleFaceCoordinates(2, :));
-    hold on;
-
-    lineInputs = [singleFaceCoordinates(1, 1:end-1); singleFaceCoordinates(2, 1:end-1); singleFaceCoordinates(1, 2:end); singleFaceCoordinates(2, 2:end)];
-    lines = sprintf(svgLineFormat, lineInputs);
-    svgText = [svgText, svgGroupStart, lines, svgGroupEnd];
-    offset = offset + [maxX + intraFaceDistance; 0];
+    % Loop over line segments and add to SVG doc
+    for k = 1:(size(singleFaceCoordinates, 1)-1)
+        x1 = singleFaceCoordinates(k, 1);
+        y1 = singleFaceCoordinates(k, 2);
+        x2 = singleFaceCoordinates(k+1, 1);
+        y2 = singleFaceCoordinates(k+1, 2);
+        s.addLine(x1, y1, x2, y2, [], 'lasercutter')
+    end
+    offset = offset + [maxX + intraFaceDistance, 0];
 end
-axis equal
-svgText = [svgText, svgEnd];
-writePlainText(svgSavePath, svgText);
+% Display preview in figure
+s.preview();
+% Save SVG to file
+s.saveSVG(svgSavePath);
+% Return SVG text
+svgText = s.createSVG();
 
-function faceCoordinates = createFaceCoordinates(faceShape, faceDirections, boxSize, numTabs, materialThickness)
-%disp('starting face:')
+function coords = createEdgeCoordinates(cornerCoords, edgeVector, numTabs, edgeType, tabFraction, materialThickness, tabTolerance)
+% cornerCoords: coordinates of the initial corner of the edge, oriented
+%   such that the edge vector goes CCW around the face
+% edgeVector: vector representing the direction of the edge starting at the
+%   corner moving CCW around the face, with length equal to the edge length
+% numTabs: number of tabs to make on the edge
+% tabFraction: The fraction of each tab cycle taken up by tab vs not tab
+% tolerance: amount to increase or decrease the size of the tabs. 0 would
+%   make the tabs and gaps fit perfectly (on paper). Negative values would
+%   make the tabs fit tighter, postive values make the fit more loosely.
+
+edgeLength = norm(edgeVector);
+edgeHat = edgeVector/edgeLength;
+tabVector = edgeHat * edgeLength/(1+numTabs/tabFraction);
+tabLength = norm(tabVector);
+gapVector = edgeHat * tabLength*((1-tabFraction)/tabFraction);
+
+switch edgeType
+    case 'I'
+        tabTolerance = -tabTolerance;
+        inVector = materialThickness * rotateEdge(edgeVector, -1) / norm(edgeVector);
+        outVector = materialThickness * rotateEdge(edgeVector, 1) / norm(edgeVector);
+        startCoords = edgeHat*tabTolerance/2;
+        startCoords = startCoords + outVector;
+    case 'O'
+        startCoords = edgeHat*tabTolerance/2;
+        inVector = materialThickness * rotateEdge(edgeVector, 1) / norm(edgeVector);
+        outVector = materialThickness * rotateEdge(edgeVector, -1) / norm(edgeVector);
+    case 'F'
+        tabTolerance = -tabTolerance;
+        inVector = materialThickness * rotateEdge(edgeVector, -1) / norm(edgeVector);
+        outVector = materialThickness * rotateEdge(edgeVector, 1) / norm(edgeVector);
+        startCoords = - edgeHat * materialThickness;
+        startCoords = startCoords + outVector;
+    case 'f'
+        startCoords = edgeHat*tabTolerance/2;
+        inVector = materialThickness * rotateEdge(edgeVector, 1) / norm(edgeVector);
+        outVector = materialThickness * rotateEdge(edgeVector, -1) / norm(edgeVector);
+end
+endCoords = startCoords + edgeVector - edgeHat * tabTolerance;
+coords = startCoords;
+
+for k = 1:numTabs
+    coords(end+1, :) = coords(end, :) + tabVector - tabTolerance*edgeHat;
+    coords(end+1, :) = coords(end, :) + inVector;
+    coords(end+1, :) = coords(end, :) + gapVector + tabTolerance*edgeHat;
+    coords(end+1, :) = coords(end, :) + outVector;
+end
+if numTabs > 0
+    coords(end+1, :) = coords(end, :) + tabVector;
+end
+coords(end+1, :) = endCoords;
+
+coords = coords + cornerCoords;
+
+function faceCoordinates = createFaceCoordinates(edgeShapes, edgeDirections, boxSize, numTabs, materialThickness, tabFraction, tabTolerance)
 faceCoordinates = [];
-for k = 1:length(faceShape)
-    edgeShape = faceShape(k);
-    edgeDirection = faceDirections(k);
+
+corners = {[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]};
+edgeSizes = boxSize(edgeDirections(1:2));
+
+for edgeNum = 1:(length(corners)-1)
+    edgeShape = edgeShapes(edgeNum);
+    edgeDirection = edgeDirections(edgeNum);
     edgeSize = boxSize(edgeDirection);
-    otherSize = boxSize(unique(faceDirections(faceDirections ~= edgeDirection)));
+    otherSize = boxSize(unique(edgeDirections(edgeDirections ~= edgeDirection)));
     if edgeShape == 'F' || edgeShape == 'f'
         currentNumTabs = 0;
     else
         currentNumTabs = numTabs(edgeDirection);
     end
-    edge = createUrEdge(currentNumTabs) .* [edgeSize; materialThickness];
-%    figure;
-%    plot(edge(1, :), edge(2, :));
-%    title(edgeShape);
-%    hold on;
-    if edgeShape == 'I'
-        edge = flipEdge(edge);
-    end
-    edge = edge + [0; otherSize/2 - materialThickness/2];
-    if edgeShape == 'F'
-        % Extend edge to the level of one material thickness
-        edge = edge + [0; materialThickness];
-    elseif edgeShape == 'f'
-        % Depress edge to the level of one material thickness
-%        edge = edge - [0; materialThickness/2];
-    end
-%    plot(edge(1, :), edge(2, :));
-    edge = rotateEdgeK(edge, k-1);
-    edge = eliminateRepeatPoints(edge);
-    faceCoordinates = eliminateRepeatPoints(faceCoordinates);
-    [faceCoordinates, edge] = trimSegments(faceCoordinates, edge);
-    faceCoordinates = [faceCoordinates, edge];
-    faceCoordinates = eliminateRepeatPoints(faceCoordinates);
+    
+    corner = corners{edgeNum} .* edgeSizes;
+    nextCorner = corners{edgeNum+1} .* edgeSizes;
+    
+    edgeVector = nextCorner-corner;
+    edge = createEdgeCoordinates(corner, edgeVector, currentNumTabs, edgeShape, tabFraction, materialThickness, tabTolerance);
+    faceCoordinates = [faceCoordinates; edge];
 end
-faceCoordinates = eliminateRepeatPoints(faceCoordinates);
-[faceCoordinates, ~] = trimSegments(faceCoordinates, faceCoordinates);
-faceCoordinates = eliminateRepeatPoints(faceCoordinates);
+faceCoordinates(end+1, :) = faceCoordinates(1, :);
 
-function coordinates = eliminateRepeatPoints(coordinates)
-repeatIndices = all(coordinates(:, 1:end-1) == coordinates(:, 2:end), 1);
-coordinates(:, repeatIndices) = [];
-
-function [coordinates1, coordinates2] = trimSegments(coordinates1, coordinates2)
-% Assume last segment of 1 is perpendicular to last segment of 2
-if ~isempty(coordinates1) && any(coordinates1(:, end) ~= coordinates2(:, 1))
-    dir1 = find((coordinates1(:, end-1) - coordinates1(:, end)), 1);
-    dir2 = find((coordinates2(:, 2) - coordinates2(:, 1)), 1);
-    end1 = coordinates2(dir1, 1);
-    start2 = coordinates1(dir2, end);
-    coordinates1(dir1, end) = end1;
-    coordinates2(dir2, 1) = start2;
-end
-%coordinates = [coordinates1, coordinates2];
-
-function urEdge = createUrEdge(numTabs, varargin)
-if nargin > 1
-    tabFraction = varargin{1};
-    if tabFraction <= 0 || tabFraction >= 1
-        warning(['Bad tab fraction: ', num2str(tabFraction)]);
-    end
-else
-    tabFraction = 0.5;
-end
-urEdge = [0; 0];
-urSegment = [[tabFraction, tabFraction, 1, 1]; [0, 1, 1, 0]];
-scaleFactor = 1/(numTabs + (1-tabFraction));
-lastX = 0;
-lastY = 0;
-for t = 1:numTabs
-    urEdge = [urEdge, urSegment .* [scaleFactor; 1] + [lastX; lastY]];
-    lastX = urEdge(1, end);
-    lastY = urEdge(2, end);
-end
-urEdge = [urEdge, [[lastX, 1]; [lastY, 0]]];
-urEdge = urEdge - [0.5; 0.5];
-
-function flippedEdge = flipEdge(edge)
-flippedEdge = [edge(1, :); -edge(2, :)];
-
-function rotatedEdge = rotateEdge(edge)
-% Rotate edge coordinates by 90 degrees
-rotatedEdge = [edge(2, :); -edge(1, :)];
-
-function rotatedEdge = rotateEdgeK(edge, k)
+function rotatedEdge = rotateEdge(edge, k)
 % Rotate edge coordinates by k*90 degrees
-rotatedEdge = edge;
-for c = 1:k
-    rotatedEdge = rotateEdge(rotatedEdge);
-end
+rotatedEdge = edge * [cos(k*pi/2), -sin(k*pi/2); sin(k*pi/2), cos(k*pi/2)];

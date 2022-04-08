@@ -139,15 +139,6 @@ classdef SVGDoc < handle
             obj.addObject('line', data, style, classNames)
 
             classNames = handleClassNamesInput(obj, classNames);
-
-            newIdx = length(obj.Objects)+1;
-            obj.Objects(newIdx).type = 'line';
-            obj.Objects(newIdx).data.x1 = x1;
-            obj.Objects(newIdx).data.y1 = y1;
-            obj.Objects(newIdx).data.x2 = x2;
-            obj.Objects(newIdx).data.y2 = y2;
-            obj.Objects(newIdx).style = style;
-            obj.Objects(newIdx).classNames = classNames;
         end
         function addPolyline(obj, xs, ys, style, classNames)
             % Add a polyline shape to the SVG document

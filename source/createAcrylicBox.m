@@ -1,14 +1,14 @@
-function svgText = createAcrylicBox(boxSize, svgSavePath, inchesPerTab, materialThickness, materialDims, door, tabFraction, tabTolerance)
+function svgText = createAcrylicBox(boxSize, svgSavePath, milsPerTab, materialThickness, materialDims, door, tabFraction, tabTolerance)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % createAcrylicBox: Generate an SVG image of the pieces of a box with the
 %                   given parameters, useful laser cutting.
 %
 % usage:  svgText = createAcrylicBox(boxSize, svgSavePath)
-%         svgText = createAcrylicBox(boxSize, svgSavePath, inchesPerTab)
-%         svgText = createAcrylicBox(boxSize, svgSavePath, inchesPerTab, 
+%         svgText = createAcrylicBox(boxSize, svgSavePath, milsPerTab)
+%         svgText = createAcrylicBox(boxSize, svgSavePath, milsPerTab, 
 %                                    materialThickness)
-%         svgText = createAcrylicBox(boxSize, svgSavePath, inchesPerTab, 
+%         svgText = createAcrylicBox(boxSize, svgSavePath, milsPerTab, 
 %                                    materialThickness, materialDims)
 % where,
 %    svgText is the text of the svg file
@@ -18,8 +18,8 @@ function svgText = createAcrylicBox(boxSize, svgSavePath, inchesPerTab, material
 %       example, if the box size is [6000, 7000, 8000] (6in x 7in x 8in), 
 %       one of the 6in x 7in sides will be the untabbed door of the box.
 %    svgSavePath is the filepath to use to save the SVG file
-%    inchesPerTab (optional) is the length of each tab (innie + outie).
-%       Default = 0.5 inches per tab
+%    milsPerTab (optional) is the length of each tab (innie + outie).
+%       Default = 500 mils (0.5 inches) per tab
 %    materialThickness (optional) is the thickness of the material the box 
 %       will be cut from in thou. This determines the depth of the tabs. 
 %       Default = 125 thou (1/8 inch)
@@ -46,13 +46,13 @@ function svgText = createAcrylicBox(boxSize, svgSavePath, inchesPerTab, material
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Determine # of tabs to include
-if ~exist('inchesPerTab', 'var') || isempty(inchesPerTab)
-    inchesPerTab = 0.5;
+if ~exist('milsPerTab', 'var') || isempty(milsPerTab)
+    milsPerTab = 500;
 end
 numTabs = [0, 0, 0];
 for k = 1:3
     dim = boxSize(k);
-    numTabs(k) = ceil(dim/(inchesPerTab*1000));
+    numTabs(k) = ceil(dim/milsPerTab);
 end
 
 if ~exist('materialThickness', 'var') || isempty(materialThickness)

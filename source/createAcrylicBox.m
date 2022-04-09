@@ -1,14 +1,14 @@
-function svgText = createAcrylicBox(boxSize, svgSavePath, milsPerTab, materialThickness, materialDims, door, tabFraction, tabTolerance)
+function svgText = createAcrylicBox(boxSize, svgSavePath, thouPerTab, materialThickness, materialDims, door, tabFraction, tabTolerance)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % createAcrylicBox: Generate an SVG image of the pieces of a box with the
 %                   given parameters, useful laser cutting.
 %
 % usage:  svgText = createAcrylicBox(boxSize, svgSavePath)
-%         svgText = createAcrylicBox(boxSize, svgSavePath, milsPerTab)
-%         svgText = createAcrylicBox(boxSize, svgSavePath, milsPerTab, 
+%         svgText = createAcrylicBox(boxSize, svgSavePath, thouPerTab)
+%         svgText = createAcrylicBox(boxSize, svgSavePath, thouPerTab, 
 %                                    materialThickness)
-%         svgText = createAcrylicBox(boxSize, svgSavePath, milsPerTab, 
+%         svgText = createAcrylicBox(boxSize, svgSavePath, thouPerTab, 
 %                                    materialThickness, materialDims)
 % where,
 %    svgText is the text of the svg file
@@ -18,8 +18,8 @@ function svgText = createAcrylicBox(boxSize, svgSavePath, milsPerTab, materialTh
 %       example, if the box size is [6000, 7000, 8000] (6in x 7in x 8in), 
 %       one of the 6in x 7in sides will be the untabbed door of the box.
 %    svgSavePath is the filepath to use to save the SVG file
-%    milsPerTab (optional) is the length of each tab (innie + outie).
-%       Default = 500 mils (0.5 inches) per tab
+%    thouPerTab (optional) is the length of each tab (innie + outie).
+%       Default = 500 thou (0.5 inches) per tab
 %    materialThickness (optional) is the thickness of the material the box 
 %       will be cut from in thou. This determines the depth of the tabs. 
 %       Default = 125 thou (1/8 inch)
@@ -29,15 +29,25 @@ function svgText = createAcrylicBox(boxSize, svgSavePath, milsPerTab, materialTh
 %       Default = [24000, 12000]
 %    door (optional) is a boolean flag indicating whether or not to include
 %       a non-tabbed side to serve as a door
+%    tabFraction (optional) is a number between 0 and 1 indicating what %
+%       of each tab (innie + outie) is outie. The default, 0.5, produces 
+%       equal sized tabs (outies) and gaps (innies).
+%    tabTolerance (optional) is the amount in thou that each tab will be
+%       oversized by in order to make a tighter fit with the gaps. Positive
+%       numbers will result in oversized tabs (tighter fit), and a negative 
+%       number will result in undersized (looser fitting) tabs. Default is
+%       0 (tabs and gaps are laid out as equal sizes)
 %
 % This function creates an SVG file containing the outlines of the walls of
 %   a box. If material is cut with a laser cutter using the output pattern 
 %   of this script, the resulting pieces can be assembled into a box. The 
 %   box has interlocking tabs, which allows for easier assembly and 
-%   stronger bonding. The box also features one side that is left 
-%   un-tabbed, which can serve as a door or an opening. This script also 
-%   outputs the SVG file as a char array, and displays a figure showing a 
-%   preview of the shape created.
+%   stronger bonding. The box also optionally features one side that is 
+%   left un-tabbed, which can serve as a door or an opening. This script 
+%   also outputs the SVG file as a char array, and displays a figure 
+%   showing a preview of the shape created.
+%
+% See also: SVGDoc
 %
 % Version: 1.0
 % Author:  Brian Kardon
@@ -46,13 +56,13 @@ function svgText = createAcrylicBox(boxSize, svgSavePath, milsPerTab, materialTh
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Determine # of tabs to include
-if ~exist('milsPerTab', 'var') || isempty(milsPerTab)
-    milsPerTab = 500;
+if ~exist('thouPerTab', 'var') || isempty(thouPerTab)
+    thouPerTab = 500;
 end
 numTabs = [0, 0, 0];
 for k = 1:3
     dim = boxSize(k);
-    numTabs(k) = ceil(dim/milsPerTab);
+    numTabs(k) = ceil(dim/thouPerTab);
 end
 
 if ~exist('materialThickness', 'var') || isempty(materialThickness)

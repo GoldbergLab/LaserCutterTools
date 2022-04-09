@@ -196,7 +196,7 @@ switch edgeType
         tabTolerance = -tabTolerance;
         inVector = materialThickness * rotateEdge(edgeVector, -1) / norm(edgeVector);
         outVector = materialThickness * rotateEdge(edgeVector, 1) / norm(edgeVector);
-        startCoords = edgeHat * materialThickness;
+        startCoords = [0, 0];
     case 'f'
         inVector = materialThickness * rotateEdge(edgeVector, 1) / norm(edgeVector);
         outVector = materialThickness * rotateEdge(edgeVector, -1) / norm(edgeVector);

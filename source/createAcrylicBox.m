@@ -129,6 +129,7 @@ unitEdgeOffsets = [
 faceCoordinates = {};
 for faceNum = 1:6
     faceCoordinates{faceNum} = createFaceCoordinates(faceShapes{faceNum}, faceDirections(faceNum, :), boxSize, numTabs, materialThickness, tabFraction, tabTolerance);
+    faceCoordinates{faceNum} = removeDuplicatePoints(faceCoordinates{faceNum});
 end
 
 % Initialize an SVGDoc object
@@ -252,3 +253,8 @@ faceCoordinates(end+1, :) = faceCoordinates(1, :);
 function rotatedEdge = rotateEdge(edge, k)
 % Rotate edge coordinates by k*90 degrees
 rotatedEdge = edge * [cos(k*pi/2), -sin(k*pi/2); sin(k*pi/2), cos(k*pi/2)];
+
+function coords = removeDuplicatePoints(coords)
+% Check which consecutive points are within 0.01 thou of each other.
+duplicateMask = all(abs(coords(1:end-1, :) - coords(2:end, :)) < 0.01, 2);
+coords(duplicateMask, :) = [];

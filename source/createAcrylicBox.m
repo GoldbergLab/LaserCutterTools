@@ -69,6 +69,7 @@ end
 if ~exist('tabFraction', 'var') || isempty(tabFraction)
     tabFraction = 0.5;
 end
+
 if ~exist('tabTolerance', 'var') || isempty(tabTolerance)
     tabTolerance = 0;
 end
@@ -165,6 +166,8 @@ function coords = createEdgeCoordinates(cornerCoords, edgeVector, numTabs, edgeT
 
 edgeLength = norm(edgeVector);
 edgeHat = edgeVector/edgeLength;
+edgeVector = edgeVector - 2*materialThickness*edgeHat;
+edgeLength = norm(edgeVector);
 tabVector = edgeHat * edgeLength/(1+numTabs/tabFraction);
 tabLength = norm(tabVector);
 gapVector = edgeHat * tabLength*((1-tabFraction)/tabFraction);
@@ -174,30 +177,33 @@ switch edgeType
         tabTolerance = -tabTolerance;
         inVector = materialThickness * rotateEdge(edgeVector, -1) / norm(edgeVector);
         outVector = materialThickness * rotateEdge(edgeVector, 1) / norm(edgeVector);
-        startCoords = edgeHat*tabTolerance/2;
-        startCoords = startCoords + outVector;
+        startCoords = edgeHat * materialThickness;
     case 'O'
-        startCoords = edgeHat*tabTolerance/2;
         inVector = materialThickness * rotateEdge(edgeVector, 1) / norm(edgeVector);
         outVector = materialThickness * rotateEdge(edgeVector, -1) / norm(edgeVector);
+        startCoords = outVector + edgeHat * materialThickness;
     case 'F'
         tabTolerance = -tabTolerance;
         inVector = materialThickness * rotateEdge(edgeVector, -1) / norm(edgeVector);
         outVector = materialThickness * rotateEdge(edgeVector, 1) / norm(edgeVector);
-        startCoords = - edgeHat * materialThickness;
-        startCoords = startCoords + outVector;
+        startCoords = edgeHat * materialThickness;
     case 'f'
-        startCoords = edgeHat*tabTolerance/2;
         inVector = materialThickness * rotateEdge(edgeVector, 1) / norm(edgeVector);
         outVector = materialThickness * rotateEdge(edgeVector, -1) / norm(edgeVector);
+        startCoords = outVector + edgeHat * materialThickness;
 end
-endCoords = startCoords + edgeVector - edgeHat * tabTolerance;
+endCoords = startCoords + edgeVector;
 coords = startCoords;
 
 for k = 1:numTabs
-    coords(end+1, :) = coords(end, :) + tabVector - tabTolerance*edgeHat;
+    if k == 1
+        offset = [0, 0];
+    else
+        offset = tabTolerance*edgeHat;
+    end
+    coords(end+1, :) = coords(end, :) + tabVector - offset;
     coords(end+1, :) = coords(end, :) + inVector;
-    coords(end+1, :) = coords(end, :) + gapVector + tabTolerance*edgeHat;
+    coords(end+1, :) = coords(end, :) + gapVector + offset;
     coords(end+1, :) = coords(end, :) + outVector;
 end
 if numTabs > 0

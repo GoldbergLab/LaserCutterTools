@@ -278,10 +278,15 @@ classdef SVGDoc < handle
             end
             svg = [svg, svgEnd];
         end
-        function preview(obj)
+        function preview(obj, previewTitle)
             % Preview image in figure
-            f = figure;
+            %   previewTitle = an optional title to add to the figure
+            if ~exist('previewTitle', 'var')
+                previewTitle = 'SVG Document Preview';
+            end
+            f = figure();
             ax = axes(f);
+            title(ax, previewTitle);
             for k = 1:length(obj.Objects)
                 object = obj.Objects(k);
                 style = obj.resolveStyle(object);

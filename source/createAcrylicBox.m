@@ -160,7 +160,8 @@ for f = 1:length(faceCoordinates)
     offset = offset + [maxX + intraFaceDistance, 0];
 end
 % Display preview in figure
-s.preview();
+previewTitle = {'SVG Document Preview', svgSavePath};
+s.preview(previewTitle);
 % Save SVG to file
 s.saveSVG(svgSavePath);
 % Return SVG text

@@ -36,7 +36,9 @@ function svgText = createAcrylicBox(boxSize, svgSavePath, thouPerTab, materialTh
 %       oversized by in order to make a tighter fit with the gaps. Positive
 %       numbers will result in oversized tabs (tighter fit), and a negative 
 %       number will result in undersized (looser fitting) tabs. Default is
-%       0 (tabs and gaps are laid out as equal sizes)
+%       0 (tabs and gaps are laid out as equal sizes). Note that a
+%       tolerance of 8 has been found to result in nicely press-fit-able
+%       parts
 %
 % This function creates an SVG file containing the outlines of the walls of
 %   a box. If material is cut with a laser cutter using the output pattern 
@@ -179,9 +181,12 @@ edgeLength = norm(edgeVector);
 edgeHat = edgeVector/edgeLength;
 edgeVector = edgeVector - 2*materialThickness*edgeHat;
 edgeLength = norm(edgeVector);
-tabVector = edgeHat * edgeLength/(1+numTabs/tabFraction);
-tabLength = norm(tabVector);
-gapVector = edgeHat * tabLength*((1-tabFraction)/tabFraction);
+periodVector = edgeHat * edgeLength / (numTabs+tabFraction);
+tabVector = periodVector * tabFraction;
+gapVector = periodVector * (1 - tabFraction);
+% tabVector = edgeHat * edgeLength/(1+numTabs/tabFraction);
+% tabLength = norm(tabVector);
+% gapVector = edgeHat * tabLength*((1-tabFraction)/tabFraction);
 
 switch edgeType
     case 'I'
